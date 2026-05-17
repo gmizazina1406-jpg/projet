@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choix langue et niveau</title>
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: rgb(222, 149, 222);
+  color: white;
+  text-align: center;
+}
+
+h1 {
+  margin-top: 20px;
+}
+
+.hint {
+  width: min(90%, 700px);
+  margin: 10px auto 20px;
+}
+
+.slider-container {
+  position: relative;
+  width: 90%;
+  margin: auto;
+  overflow: hidden;
+}
+
+.slider {
+  display: flex;
+  transition: transform 0.5s;
+}
+
+.card {
+  min-width: 150px;
+  margin: 10px;
+  padding: 10px;
+  background: #993479;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: 0.3s;
+  border: 3px solid transparent;
+}
+
+.card:hover {
+  transform: scale(1.05);
+  background: #222;
+}
+
+.card.selected {
+  border-color: #b8ff7a;
+}
+
+.card img {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #bf92a5;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.left {
+  left: 0;
+}
+
+.right {
+  right: 0;
+}
+
+.selected-language {
+  margin: 16px auto 28px;
+  font-weight: bold;
+}
+
+.map {
+  width: min(90%, 760px);
+  margin: 24px auto 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 16px;
+}
+
+.level {
+  padding: 15px 20px;
+  background: #9ab4de;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #1f2140;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.level:hover {
+  background: #9ab2d4;
+  transform: translateY(-4px);
+}
+</style>
+</head>
+<body>
+
+<h1>Choisis ta langue</h1>
+<p class="hint">Selectionne d abord une langue, puis clique sur un niveau pour passer a la page suivante.</p>
+
+<div class="slider-container">
+  <button class="arrow left" type="button" onclick="move(1)"> ></button>
+  <div class="slider" id="slider"></div>
+  <button class="arrow right" type="button" onclick="move(-1)"><</button>
+</div>
+
+<p class="selected-language" id="selected-language">Langue selectionnee : aucune</p>
+
+<h1>Carte des niveaux</h1>
+<div class="map" id="map"></div>
+
+<script>
+const languages = [
+  { name: 'anglais', flag: 'anglais.png' },
+  { name: 'espagnol', flag: 'espagne.png' },
+  { name: 'allemand', flag: 'allemagne.png' },
+  { name: 'italien', flag: 'italie.png' },
+  { name: 'japonais', flag: 'japon.png' },
+  { name: 'chinois', flag: 'chine.png' },
+  { name: 'arabe', flag: 'arabe.png' },
+  { name: 'portugais', flag: 'portugal.png' },
+  { name: 'russe', flag: 'russie.png' },
+  { name: 'coreen', flag: 'korea.png' }
+];
+
+const slider = document.getElementById('slider');
+const selectedLanguageText = document.getElementById('selected-language');
+let position = 0;
+
+languages.forEach(lang => {
+  const div = document.createElement('div');
+  div.className = 'card';
+  div.innerHTML = `<img src="${lang.flag}" alt="${lang.name}"><p>${lang.name}</p>`;
+  div.onclick = () => chooseLanguage(lang.name, div);
+  slider.appendChild(div);
+});
+
+function move(dir) {
+  position += dir * 160;
+  slider.style.transform = `translateX(${position}px)`;
+}
+
+function chooseLanguage(lang, card) {
+  localStorage.setItem('langue', lang);
+  document.querySelectorAll('.card').forEach(item => item.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedLanguageText.textContent = 'Langue selectionnee : ' + lang;
+}
+
+const levels = ['A1', 'A2', 'B1', 'B2', 'C1'];
+const map = document.getElementById('map');
+
+levels.forEach(level => {
+  const div = document.createElement('div');
+  div.className = 'level';
+  div.textContent = level;
+  div.onclick = () => startLevel(level);
+  map.appendChild(div);
+});
+
+function startLevel(level) {
+  const selectedLanguage = localStorage.getItem('langue');
+
+  if (!selectedLanguage) {
+    selectedLanguageText.textContent = 'Choisis une langue avant de selectionner un niveau.';
+    return;
+  }
+
+  localStorage.setItem('niveau', level);
+  window.location.href = 'questions.html';
+}
+</script>
+
+</body>
+</html>
