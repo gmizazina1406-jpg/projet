@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choix du jeu</title>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(180deg, #261233, #5b2a75);
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        .game-card {
+            width: min(92%, 760px);
+            padding: 32px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .selection-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 16px 0 24px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 0 0 24px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 10px 18px;
+            border-radius: 999px;
+            background: #ffcf6e;
+            color: #2d1638;
+            font-weight: bold;
+        }
+
+        .mode-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin: 20px 0 28px;
+        }
+
+        .mode-button,
+        .secondary-button,
+        .option-button {
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .mode-button {
+            min-width: 220px;
+            padding: 16px 20px;
+            background: #ff7eb3;
+            font-weight: bold;
+        }
+
+        .secondary-button {
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: #7d66c2;
+        }
+
+        .game-zone {
+            text-align: left;
+            padding: 24px;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .game-zone h2 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .answer-input {
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        .validate-button {
+            margin-top: 14px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #35c79a;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .options {
+            display: grid;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .option-button {
+            width: 100%;
+            padding: 14px 16px;
+            background: #4c3d90;
+            text-align: left;
+        }
+
+        .result {
+            min-height: 28px;
+            margin-top: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .next-question-button {
+            display: none;
+            margin: 16px auto 0;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #ffcf6e;
+            color: #2d1638;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <main class="game-card">
+        <h1>Que veux-tu jouer ?</h1>
+        <p>Choisis un mode de jeu selon la langue et le niveau selectionnes.</p>
+
+        <div class="selection-row">
+            <span class="badge" id="selected-language"></span>
+            <span class="badge" id="selected-level"></span>
+        </div>
+
+        <div class="status-row">
+            <span class="badge" id="score-display">Score : 0</span>
+            <span class="badge" id="lives-display">Chances : 3/3</span>
+        </div>
+
+        <div class="mode-buttons">
+            <button class="mode-button" type="button" onclick="showRiddle()">Jouer une devinette</button>
+            <button class="mode-button" type="button" onclick="showQuiz()">Jouer un QCM</button>
+        </div>
+
+        <section class="game-zone" id="game-zone">
+            <h2>Selectionne un mode</h2>
+            <p>La devinette et le QCM utiliseront la langue et le niveau choisis sur la page precedente.</p>
+        </section>
+
+        <button class="secondary-button" type="button" onclick="window.location.href='dev3.html'">Changer la langue ou le niveau</button>
+    </main>
+
+    <script>
+        const selectedLanguage = localStorage.getItem('langue') || 'anglais';
+        const selectedLevel = localStorage.getItem('niveau') || 'A1';
+        const playerName = localStorage.getItem('playerName') || 'joueur';
+        let score = 0;
+        let lives = 3;
+        let currentMode = '';
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let answered = false;
+
+        const riddles = {
+            anglais: {
+                A1: [
+                    { question: 'I am yellow and monkeys love me. What am I?', answer: 'banana' },
+                    { question: 'I have keys but I do not open doors. What am I?', answer: 'keyboard' },
+                    { question: 'I tell time but I am not alive. What am I?', answer: 'clock' }
+                ],
+                A2: [
+                    { question: 'I have four wheels and I can take you to school. What am I?', answer: 'bus' },
+                    { question: 'I am full of pages but I am not a tree. What am I?', answer: 'book' },
+                    { question: 'You wear me on your feet. What am I?', answer: 'shoe' }
+                ],
+                B1: [
+                    { question: 'The more you take away from me, the bigger I become. What am I?', answer: 'hole' },
+                    { question: 'I get wetter the more I dry. What am I?', answer: 'towel' },
+                    { question: 'I have hands but cannot clap. What am I?', answer: 'clock' }
+                ],
+                B2: [
+                    { question: 'I speak without a mouth and hear without ears. What am I?', answer: 'echo' },
+                    { question: 'I can travel around the world while staying in one corner. What am I?', answer: 'stamp' },
+                    { question: 'The more of me there is, the less you see. What am I?', answer: 'darkness' }
+                ],
+                C1: [
+                    { question: 'I exist only when seen through memory and longing. What am I?', answer: 'the past' },
+                    { question: 'I am born in silence and die in noise. What am I?', answer: 'thought' },
+                    { question: 'I shape language without being spoken. What am I?', answer: 'meaning' }
+                ]
+            },
+            espagnol: {
+                A1: [
+                    { question: 'Soy amarillo y a los monos les gusto. Que soy?', answer: 'platano' },
+                    { question: 'Tengo teclas pero no abro puertas. Que soy?', answer: 'teclado' },
+                    { question: 'Doy la hora pero no estoy vivo. Que soy?', answer: 'reloj' }
+                ],
+                A2: [
+                    { question: 'Tengo cuatro ruedas y llevo ninos a la escuela. Que soy?', answer: 'autobus' },
+                    { question: 'Tengo paginas pero no soy un arbol. Que soy?', answer: 'libro' },
+                    { question: 'Me llevas en los pies. Que soy?', answer: 'zapato' }
+                ],
+                B1: [
+                    { question: 'Cuanto mas quitas, mas grande soy. Que soy?', answer: 'agujero' },
+                    { question: 'Cuanto mas seco, mas me mojo. Que soy?', answer: 'toalla' },
+                    { question: 'Tengo manos pero no aplaudo. Que soy?', answer: 'reloj' }
+                ],
+                B2: [
+                    { question: 'Hablo sin boca y oigo sin oidos. Que soy?', answer: 'eco' },
+                    { question: 'Puedo viajar por el mundo sin moverme de una esquina. Que soy?', answer: 'sello' },
+                    { question: 'Cuanto mas hay de mi, menos ves. Que soy?', answer: 'oscuridad' }
+                ],
+                C1: [
+                    { question: 'Existo entre la memoria y la nostalgia. Que soy?', answer: 'pasado' },
+                    { question: 'Nasco en silencio y muero en ruido. Que soy?', answer: 'pensamiento' },
+                    { question: 'Doy forma al lenguaje sin hablar. Que soy?', answer: 'significado' }
+                ]
+            },
+            allemand: {
+                A1: [
+                    { question: 'Ich bin gelb und Affen essen mich gern. Was bin ich?', answer: 'banane' },
+                    { question: 'Ich habe Tasten, aber ich oeffne keine Tueren. Was bin ich?', answer: 'tastatur' },
+                    { question: 'Ich zeige die Zeit, aber ich lebe nicht. Was bin ich?', answer: 'uhr' }
+                ],
+                A2: [
+                    { question: 'Ich habe vier Raeder und bringe Kinder zur Schule. Was bin ich?', answer: 'bus' },
+                    { question: 'Ich habe Seiten, bin aber kein Baum. Was bin ich?', answer: 'buch' },
+                    { question: 'Du traegst mich an deinen Fuessen. Was bin ich?', answer: 'schuh' }
+                ],
+                B1: [
+                    { question: 'Je mehr man von mir wegnimmt, desto groesser werde ich. Was bin ich?', answer: 'loch' },
+                    { question: 'Je mehr ich trockne, desto nasser werde ich. Was bin ich?', answer: 'handtuch' },
+                    { question: 'Ich habe Haende, kann aber nicht klatschen. Was bin ich?', answer: 'uhr' }
+                ],
+                B2: [
+                    { question: 'Ich spreche ohne Mund und hoere ohne Ohren. Was bin ich?', answer: 'echo' },
+                    { question: 'Ich reise um die Welt und bleibe in einer Ecke. Was bin ich?', answer: 'briefmarke' },
+                    { question: 'Je mehr es mich gibt, desto weniger siehst du. Was bin ich?', answer: 'dunkelheit' }
+                ],
+                C1: [
+                    { question: 'Ich lebe nur in Erinnerung und Sehnsucht. Was bin ich?', answer: 'vergangenheit' },
+                    { question: 'Ich werde in Stille geboren und sterbe im Laerm. Was bin ich?', answer: 'gedanke' },
+                    { question: 'Ich forme Sprache, ohne gesprochen zu werden. Was bin ich?', answer: 'bedeutung' }
+                ]
+            },
+            italien: {
+                A1: [
+                    { question: 'Sono gialla e piaccio alle scimmie. Chi sono?', answer: 'banana' },
+                    { question: 'Ho tasti ma non apro porte. Cosa sono?', answer: 'tastiera' },
+                    { question: 'Do l ora ma non sono viva. Cosa sono?', answer: 'orologio' }
+                ],
+                A2: [
+                    { question: 'Ho quattro ruote e porto i bambini a scuola. Cosa sono?', answer: 'autobus' },
+                    { question: 'Ho pagine ma non sono un albero. Cosa sono?', answer: 'libro' },
+                    { question: 'Mi indossi ai piedi. Cosa sono?', answer: 'scarpa' }
+                ],
+                B1: [
+                    { question: 'Piu mi togli, piu divento grande. Cosa sono?', answer: 'buco' },
+                    { question: 'Piu asciugo, piu mi bagno. Cosa sono?', answer: 'asciugamano' },
+                    { question: 'Ho mani ma non applaudo. Cosa sono?', answer: 'orologio' }
+                ],
+                B2: [
+                    { question: 'Parlo senza bocca e sento senza orecchie. Cosa sono?', answer: 'eco' },
+                    { question: 'Posso viaggiare nel mondo restando in un angolo. Cosa sono?', answer: 'francobollo' },
+                    { question: 'Piu ce n e di me, meno vedi. Cosa sono?', answer: 'oscurita' }
+                ],
+                C1: [
+                    { question: 'Esisto tra memoria e nostalgia. Cosa sono?', answer: 'passato' },
+                    { question: 'Nasco nel silenzio e muoio nel rumore. Cosa sono?', answer: 'pensiero' },
+                    { question: 'Do forma al linguaggio senza essere pronunciato. Cosa sono?', answer: 'significato' }
+                ]
+            },
+            japonais: {
+                A1: [
+                    { question: 'I am yellow and monkeys love me. What am I?', answer: 'banana' },
+                    { question: 'I have keys but I do not open doors. What am I?', answer: 'keyboard' },
+                    { question: 'I tell time but I am not alive. What am I?', answer: 'clock' }
+                ],
+                A2: [
+                    { question: 'I have four wheels and take students to school. What am I?', answer: 'bus' },
+                    { question: 'I have pages but I am not a tree. What am I?', answer: 'book' },
+                    { question: 'You wear me on your feet. What am I?', answer: 'shoe' }
+                ],
+                B1: [
+                    { question: 'The more you remove, the bigger I become. What am I?', answer: 'hole' },
+                    { question: 'I get wetter the more I dry. What am I?', answer: 'towel' },
+                    { question: 'I have hands but cannot clap. What am I?', answer: 'clock' }
+                ],
+                B2: [
+                    { question: 'I speak without a mouth. What am I?', answer: 'echo' },
+                    { question: 'I travel around the world in one corner. What am I?', answer: 'stamp' },
+                    { question: 'The more of me there is, the less you see. What am I?', answer: 'darkness' }
+                ],
+                C1: [
+                    { question: 'I remain in memory and longing. What am I?', answer: 'past' },
+                    { question: 'I am born in silence and die in noise. What am I?', answer: 'thought' },
+                    { question: 'I shape language without being spoken. What am I?', answer: 'meaning' }
+                ]
+            },
+            chinois: {
+                A1: [
+                    { question: 'I am yellow and monkeys like me. What am I?', answer: 'banana' },
+                    { question: 'I have keys but I do not open doors. What am I?', answer: 'keyboard' },
+                    { question: 'I tell time but I am not alive. What am I?', answer: 'clock' }
+                ],
+                A2: [
+                    { question: 'I have four wheels and go to school. What am I?', answer: 'bus' },
+                    { question: 'I have pages but I am not a tree. What am I?', answer: 'book' },
+                    { question: 'You wear me on your feet. What am I?', answer: 'shoe' }
+                ],
+                B1: [
+                    { question: 'The more you take away, the bigger I become. What am I?', answer: 'hole' },
+                    { question: 'The more I dry, the wetter I get. What am I?', answer: 'towel' },
+                    { question: 'I have hands but cannot clap. What am I?', answer: 'clock' }
+                ],
+                B2: [
+                    { question: 'I speak without a mouth. What am I?', answer: 'echo' },
+                    { question: 'I can travel worldwide in one corner. What am I?', answer: 'stamp' },
+                    { question: 'The more of me there is, the less you see. What am I?', answer: 'darkness' }
+                ],
+                C1: [
+                    { question: 'I stay in memory and longing. What am I?', answer: 'past' },
+                    { question: 'I am born in silence and die in noise. What am I?', answer: 'thought' },
+                    { question: 'I shape language without being spoken. What am I?', answer: 'meaning' }
+                ]
+            },
+            arabe: {
+                A1: [
+                    { question: 'I am yellow and monkeys love me. What am I?', answer: 'banana' },
+                    { question: 'I have keys but I do not open doors. What am I?', answer: 'keyboard' },
+                    { question: 'I tell time but I am not alive. What am I?', answer: 'clock' }
+                ],
+                A2: [
+                    { question: 'I have four wheels and take children to school. What am I?', answer: 'bus' },
+                    { question: 'I have pages but I am not a tree. What am I?', answer: 'book' },
+                    { question: 'You wear me on your feet. What am I?', answer: 'shoe' }
+                ],
+                B1: [
+                    { question: 'The more you remove, the bigger I become. What am I?', answer: 'hole' },
+                    { question: 'The more I dry, the wetter I get. What am I?', answer: 'towel' },
+                    { question: 'I have hands but cannot clap. What am I?', answer: 'clock' }
+                ],
+                B2: [
+                    { question: 'I speak without a mouth. What am I?', answer: 'echo' },
+                    { question: 'I can travel around the world from one corner. What am I?', answer: 'stamp' },
+                    { question: 'The more of me there is, the less you see. What am I?', answer: 'darkness' }
+                ],
+                C1: [
+                    { question: 'I live in memory and longing. What am I?', answer: 'past' },
+                    { question: 'I am born in silence and die in noise. What am I?', answer: 'thought' },
+                    { question: 'I shape language without being spoken. What am I?', answer: 'meaning' }
+                ]
+            },
+            portugais: {
+                A1: [
+                    { question: 'Sou amarelo e os macacos gostam de mim. O que sou?', answer: 'banana' },
+                    { question: 'Tenho teclas mas nao abro portas. O que sou?', answer: 'teclado' },
+                    { question: 'Dou a hora mas nao estou vivo. O que sou?', answer: 'relogio' }
+                ],
+                A2: [
+                    { question: 'Tenho quatro rodas e levo criancas a escola. O que sou?', answer: 'autocarro' },
+                    { question: 'Tenho paginas mas nao sou uma arvore. O que sou?', answer: 'livro' },
+                    { question: 'Usas me nos pes. O que sou?', answer: 'sapato' }
+                ],
+                B1: [
+                    { question: 'Quanto mais me tiras, maior fico. O que sou?', answer: 'buraco' },
+                    { question: 'Quanto mais seco, mais molhado fico. O que sou?', answer: 'toalha' },
+                    { question: 'Tenho maos mas nao bato palmas. O que sou?', answer: 'relogio' }
+                ],
+                B2: [
+                    { question: 'Falo sem boca e ouco sem ouvidos. O que sou?', answer: 'eco' },
+                    { question: 'Posso viajar pelo mundo ficando num canto. O que sou?', answer: 'selo' },
+                    { question: 'Quanto mais ha de mim, menos ves. O que sou?', answer: 'escuridao' }
+                ],
+                C1: [
+                    { question: 'Existo na memoria e na saudade. O que sou?', answer: 'passado' },
+                    { question: 'Nasco no silencio e morro no ruido. O que sou?', answer: 'pensamento' },
+                    { question: 'Dou forma a linguagem sem ser falado. O que sou?', answer: 'significado' }
+                ]
+            },
+            russe: {
+                A1: [
+                    { question: 'I am yellow and monkeys like me. What am I?', answer: 'banana' },
+                    { question: 'I have keys but do not open doors. What am I?', answer: 'keyboard' },
+                    { question: 'I tell time but I am not alive. What am I?', answer: 'clock' }
+                ],
+                A2: [
+                    { question: 'I have four wheels and go to school. What am I?', answer: 'bus' },
+                    { question: 'I have pages but I am not a tree. What am I?', answer: 'book' },
+                    { question: 'You wear me on your feet. What am I?', answer: 'shoe' }
+                ],
+                B1: [
+                    { question: 'The more you remove, the bigger I become. What am I?', answer: 'hole' },
+                    { question: 'The more I dry, the wetter I become. What am I?', answer: 'towel' },
+                    { question: 'I have hands but cannot clap. What am I?', answer: 'clock' }
+                ],
+                B2: [
+                    { question: 'I speak without a mouth. What am I?', answer: 'echo' },
+                    { question: 'I travel around the world in one corner. What am I?', answer: 'stamp' },
+                    { question: 'The more of me there is, the less you see. What am I?', answer: 'darkness' }
+                ],
+                C1: [
+                    { question: 'I live in memory and longing. What am I?', answer: 'past' },
+                    { question: 'I am born in silence and die in noise. What am I?', answer: 'thought' },
+                    { question: 'I shape language without being spoken. What am I?', answer: 'meaning' }
+                ]
+            },
+            coreen: {
+                A1: [
+                    { question: 'I am yellow and monkeys like me. What am I?', answer: 'banana' },
+                    { question: 'I have keys but do not open doors. What am I?', answer: 'keyboard' },
+                    { question: 'I tell time but I am not alive. What am I?', answer: 'clock' }
+                ],
+                A2: [
+                    { question: 'I have four wheels and take students to school. What am I?', answer: 'bus' },
+                    { question: 'I have pages but I am not a tree. What am I?', answer: 'book' },
+                    { question: 'You wear me on your feet. What am I?', answer: 'shoe' }
+                ],
+                B1: [
+                    { question: 'The more you take away, the bigger I become. What am I?', answer: 'hole' },
+                    { question: 'The more I dry, the wetter I get. What am I?', answer: 'towel' },
+                    { question: 'I have hands but cannot clap. What am I?', answer: 'clock' }
+                ],
+                B2: [
+                    { question: 'I speak without a mouth. What am I?', answer: 'echo' },
+                    { question: 'I can travel around the world from one corner. What am I?', answer: 'stamp' },
+                    { question: 'The more of me there is, the less you see. What am I?', answer: 'darkness' }
+                ],
+                C1: [
+                    { question: 'I remain in memory and longing. What am I?', answer: 'past' },
+                    { question: 'I am born in silence and die in noise. What am I?', answer: 'thought' },
+                    { question: 'I shape language without being spoken. What am I?', answer: 'meaning' }
+                ]
+            }
+        };
+
+        const quizzes = {
+            anglais: {
+                A1: [
+                    { question: 'How do you say "chat" in English?', options: ['dog', 'cat', 'bird'], correct: 1 },
+                    { question: 'Which word is a color?', options: ['blue', 'chair', 'window'], correct: 0 },
+                    { question: 'Which word means "pomme"?', options: ['apple', 'house', 'water'], correct: 0 }
+                ],
+                A2: [
+                    { question: 'What is the past of "go"?', options: ['goed', 'went', 'gone'], correct: 1 },
+                    { question: 'Choose the correct sentence.', options: ['She play soccer.', 'She plays soccer.', 'She playing soccer.'], correct: 1 },
+                    { question: 'What does "library" mean?', options: ['ecole', 'bibliotheque', 'ville'], correct: 1 }
+                ],
+                B1: [
+                    { question: 'Choose the correct sentence.', options: ['If I was rich...', 'If I were rich...', 'If I am rich yesterday...'], correct: 1 },
+                    { question: 'Choose the phrasal verb closest to "continue".', options: ['give up', 'carry on', 'turn off'], correct: 1 },
+                    { question: 'Which sentence is in passive voice?', options: ['The chef cooked dinner.', 'Dinner was cooked by the chef.', 'The chef is cooking dinner.'], correct: 1 }
+                ],
+                B2: [
+                    { question: 'Choose the closest synonym of "difficult".', options: ['easy', 'hard', 'small'], correct: 1 },
+                    { question: 'Which connector shows contrast?', options: ['however', 'because', 'therefore'], correct: 0 },
+                    { question: 'Choose the most precise word.', options: ['thing', 'object', 'artifact'], correct: 2 }
+                ],
+                C1: [
+                    { question: 'Which sentence is the most formal?', options: ['I wanna know.', 'I wish to inquire.', 'Tell me now.'], correct: 1 },
+                    { question: 'Which word best fits an academic tone?', options: ['kids', 'children', 'offspring'], correct: 1 },
+                    { question: 'Choose the best paraphrase of "mitigate".', options: ['worsen', 'reduce', 'ignore'], correct: 1 }
+                ]
+            },
+            espagnol: {
+                A1: [
+                    { question: 'Como se dice "bonjour" en espagnol?', options: ['hola', 'adios', 'gracias'], correct: 0 },
+                    { question: 'Que palabra es un color?', options: ['azul', 'mesa', 'puerta'], correct: 0 },
+                    { question: 'Que significa "manzana"?', options: ['apple', 'house', 'water'], correct: 0 }
+                ],
+                A2: [
+                    { question: 'Que significa "libro"?', options: ['table', 'livre', 'stylo'], correct: 1 },
+                    { question: 'Cual frase es correcta?', options: ['Ella juega.', 'Ella jugar.', 'Ella juegan.'], correct: 0 },
+                    { question: 'Que significa "escuela"?', options: ['school', 'street', 'window'], correct: 0 }
+                ],
+                B1: [
+                    { question: 'Cual es la forma correcta?', options: ['yo fui', 'yo goed', 'yo va'], correct: 0 },
+                    { question: 'Que opcion expresa continuidad?', options: ['seguir', 'caer', 'cerrar'], correct: 0 },
+                    { question: 'Cual frase esta mejor construida?', options: ['Si yo fuera rico...', 'Si yo fui rico...', 'Si yo soy rico ayer...'], correct: 0 }
+                ],
+                B2: [
+                    { question: 'Que palabra significa "rapido"?', options: ['lento', 'veloz', 'debil'], correct: 1 },
+                    { question: 'Que conector expresa contraste?', options: ['sin embargo', 'porque', 'entonces'], correct: 0 },
+                    { question: 'Que palabra es mas precisa?', options: ['cosa', 'objeto', 'artefacto'], correct: 2 }
+                ],
+                C1: [
+                    { question: 'Que phrase es la mas formal?', options: ['Que tal?', 'Deseo solicitar informacion.', 'Dime eso.'], correct: 1 },
+                    { question: 'Que palabra conviene mas en un texto academico?', options: ['chicos', 'ninos', 'menores'], correct: 1 },
+                    { question: 'Que significa mejor "mitigar"?', options: ['empeorar', 'reducir', 'ignorar'], correct: 1 }
+                ]
+            },
+            allemand: {
+                A1: [
+                    { question: 'Comment dit-on "maison" en allemand ?', options: ['Haus', 'Baum', 'Katze'], correct: 0 },
+                    { question: 'Quel mot est une couleur ?', options: ['blau', 'Tisch', 'Lampe'], correct: 0 },
+                    { question: 'Que veut dire "Apfel" ?', options: ['pomme', 'porte', 'eau'], correct: 0 }
+                ],
+                A2: [
+                    { question: 'Quel mot veut dire "merci" ?', options: ['Bitte', 'Danke', 'Hallo'], correct: 1 },
+                    { question: 'Quelle phrase est correcte ?', options: ['Sie spielt.', 'Sie spielen Fussball gestern.', 'Sie spiel.'], correct: 0 },
+                    { question: 'Que signifie "Schule" ?', options: ['fenetre', 'ecole', 'chaise'], correct: 1 }
+                ],
+                B1: [
+                    { question: 'Quelle phrase est correcte ?', options: ['Ich bin gegangen', 'Ich goed', 'Ich gehen gestern'], correct: 0 },
+                    { question: 'Quel mot exprime la poursuite ?', options: ['weitermachen', 'schliessen', 'werfen'], correct: 0 },
+                    { question: 'Quelle phrase est la meilleure ?', options: ['Wenn ich reich waere...', 'Wenn ich war reich...', 'Wenn ich bin gestern reich...'], correct: 0 }
+                ],
+                B2: [
+                    { question: 'Quel mot signifie "fort" ?', options: ['schwach', 'stark', 'klein'], correct: 1 },
+                    { question: 'Quel connecteur marque une opposition ?', options: ['jedoch', 'weil', 'also'], correct: 0 },
+                    { question: 'Quel mot est le plus precis ?', options: ['Ding', 'Objekt', 'Artefakt'], correct: 2 }
+                ],
+                C1: [
+                    { question: 'Quelle phrase est la plus soutenue ?', options: ['Gib mir das.', 'Ich moechte eine Auskunft erbitten.', 'Was ist das?'], correct: 1 },
+                    { question: 'Quel mot convient mieux a un style academique ?', options: ['Kids', 'Kinder', 'Nachwuchs'], correct: 1 },
+                    { question: 'Quel mot se rapproche le plus de "abschwaechen" ?', options: ['verstaerken', 'mindern', 'ignorieren'], correct: 1 }
+                ]
+            },
+            italien: {
+                A1: [
+                    { question: 'Come si dice "chat" in italiano?', options: ['gatto', 'cane', 'uccello'], correct: 0 },
+                    { question: 'Quale parola e un colore?', options: ['blu', 'sedia', 'finestra'], correct: 0 },
+                    { question: 'Cosa significa "mela"?', options: ['apple', 'house', 'water'], correct: 0 }
+                ],
+                A2: [
+                    { question: 'Qual e il significato di "libro"?', options: ['stylo', 'livre', 'porte'], correct: 1 },
+                    { question: 'Quale frase e corretta?', options: ['Lei gioca.', 'Lei giocare.', 'Lei giocano.'], correct: 0 },
+                    { question: 'Cosa significa "scuola"?', options: ['school', 'street', 'window'], correct: 0 }
+                ],
+                B1: [
+                    { question: 'Quale frase e corretta?', options: ['Se fossi ricco...', 'Se ero ricco...', 'Se sono ricco ieri...'], correct: 0 },
+                    { question: 'Quale parola indica continuazione?', options: ['continuare', 'cadere', 'chiudere'], correct: 0 },
+                    { question: 'Quale frase e passiva?', options: ['Il cuoco prepara la cena.', 'La cena e preparata dal cuoco.', 'Il cuoco prepara oggi.'], correct: 1 }
+                ],
+                B2: [
+                    { question: 'Quale parola significa "difficile"?', options: ['facile', 'arduo', 'piccolo'], correct: 1 },
+                    { question: 'Quale connettore esprime contrasto?', options: ['tuttavia', 'perche', 'quindi'], correct: 0 },
+                    { question: 'Quale parola e piu precisa?', options: ['cosa', 'oggetto', 'artefatto'], correct: 2 }
+                ],
+                C1: [
+                    { question: 'Quale frase e la piu formale?', options: ['Voglio sapere.', 'Desidero richiedere informazioni.', 'Dimmi ora.'], correct: 1 },
+                    { question: 'Quale parola e piu adatta a un testo accademico?', options: ['ragazzi', 'bambini', 'minori'], correct: 2 },
+                    { question: 'Quale parola si avvicina di piu a "mitigare"?', options: ['peggiorare', 'ridurre', 'ignorare'], correct: 1 }
+                ]
+            },
+            japonais: {
+                A1: [
+                    { question: 'How do you say "cat"?', options: ['cat', 'dog', 'bird'], correct: 0 },
+                    { question: 'Which word is a color?', options: ['blue', 'chair', 'window'], correct: 0 },
+                    { question: 'Which word means "apple"?', options: ['apple', 'house', 'water'], correct: 0 }
+                ],
+                A2: [
+                    { question: 'What does "book" mean?', options: ['livre', 'porte', 'chaise'], correct: 0 },
+                    { question: 'Choose the correct sentence.', options: ['She studies.', 'She study yesterday.', 'She studying always.'], correct: 0 },
+                    { question: 'What does "school" mean?', options: ['ecole', 'rue', 'fenetre'], correct: 0 }
+                ],
+                B1: [
+                    { question: 'Choose the correct sentence.', options: ['If I were rich...', 'If I am rich yesterday...', 'If I was rich now yesterday...'], correct: 0 },
+                    { question: 'Which word means continue?', options: ['continue', 'close', 'drop'], correct: 0 },
+                    { question: 'Which sentence is passive?', options: ['The meal was cooked.', 'He cooks the meal.', 'They cook daily.'], correct: 0 }
+                ],
+                B2: [
+                    { question: 'Which word is closest to "difficult"?', options: ['hard', 'small', 'bright'], correct: 0 },
+                    { question: 'Which connector shows contrast?', options: ['however', 'because', 'so'], correct: 0 },
+                    { question: 'Which word is most precise?', options: ['thing', 'object', 'artifact'], correct: 2 }
+                ],
+                C1: [
+                    { question: 'Which sentence is most formal?', options: ['Tell me now.', 'I would like to request information.', 'I wanna know.'], correct: 1 },
+                    { question: 'Which word fits academic tone best?', options: ['kids', 'children', 'youngsters'], correct: 1 },
+                    { question: 'What is closest to "mitigate"?', options: ['reduce', 'worsen', 'ignore'], correct: 0 }
+                ]
+            },
+            chinois: {
+                A1: [
+                    { question: 'How do you say "cat" in English?', options: ['cat', 'dog', 'bird'], correct: 0 },
+                    { question: 'Which word is a color?', options: ['blue', 'table', 'window'], correct: 0 },
+                    { question: 'Which word means "apple"?', options: ['apple', 'house', 'water'], correct: 0 }
+                ],
+                A2: [
+                    { question: 'What does "book" mean?', options: ['livre', 'porte', 'stylo'], correct: 0 },
+                    { question: 'Choose the correct sentence.', options: ['He reads every day.', 'He read every days.', 'He reading every day.'], correct: 0 },
+                    { question: 'What does "school" mean?', options: ['ecole', 'route', 'fenetre'], correct: 0 }
+                ],
+                B1: [
+                    { question: 'Choose the correct sentence.', options: ['If I were rich...', 'If I am rich yesterday...', 'If I was rich yesterday now...'], correct: 0 },
+                    { question: 'Which word means continue?', options: ['continue', 'close', 'fall'], correct: 0 },
+                    { question: 'Which sentence is passive?', options: ['The letter was sent.', 'She sends the letter.', 'She sending letters.'], correct: 0 }
+                ],
+                B2: [
+                    { question: 'Which word is closest to "difficult"?', options: ['hard', 'small', 'quiet'], correct: 0 },
+                    { question: 'Which connector shows contrast?', options: ['however', 'because', 'therefore'], correct: 0 },
+                    { question: 'Which word is most precise?', options: ['thing', 'object', 'artifact'], correct: 2 }
+                ],
+                C1: [
+                    { question: 'Which sentence is most formal?', options: ['Tell me that.', 'I wish to request information.', 'I wanna ask.'], correct: 1 },
+                    { question: 'Which word fits academic style best?', options: ['kids', 'children', 'little ones'], correct: 1 },
+                    { question: 'Which word is closest to "mitigate"?', options: ['reduce', 'ignore', 'increase'], correct: 0 }
+                ]
+            },
+            arabe: {
+                A1: [
+                    { question: 'How do you say "cat" in English?', options: ['cat', 'dog', 'bird'], correct: 0 },
+                    { question: 'Which word is a color?', options: ['blue', 'chair', 'window'], correct: 0 },
+                    { question: 'Which word means "apple"?', options: ['apple', 'street', 'water'], correct: 0 }
+                ],
+                A2: [
+                    { question: 'What does "book" mean?', options: ['livre', 'porte', 'chaise'], correct: 0 },
+                    { question: 'Choose the correct sentence.', options: ['She studies.', 'She study every days.', 'She studying at school.'], correct: 0 },
+                    { question: 'What does "school" mean?', options: ['ecole', 'route', 'fenetre'], correct: 0 }
+                ],
+                B1: [
+                    { question: 'Choose the correct sentence.', options: ['If I were rich...', 'If I am rich yesterday...', 'If I was rich yesterday now...'], correct: 0 },
+                    { question: 'Which word means continue?', options: ['continue', 'stop', 'drop'], correct: 0 },
+                    { question: 'Which sentence is passive?', options: ['The book was written.', 'He writes the book.', 'He writing a book.'], correct: 0 }
+                ],
+                B2: [
+                    { question: 'Which word is closest to "difficult"?', options: ['hard', 'small', 'slow'], correct: 0 },
+                    { question: 'Which connector shows contrast?', options: ['however', 'because', 'then'], correct: 0 },
+                    { question: 'Which word is most precise?', options: ['thing', 'object', 'artifact'], correct: 2 }
+                ],
+                C1: [
+                    { question: 'Which sentence is most formal?', options: ['Tell me now.', 'I would like to request information.', 'I wanna know.'], correct: 1 },
+                    { question: 'Which word fits academic tone?', options: ['kids', 'children', 'young ones'], correct: 1 },
+                    { question: 'Which word is closest to "mitigate"?', options: ['reduce', 'worsen', 'ignore'], correct: 0 }
+                ]
+            },
+            portugais: {
+                A1: [
+                    { question: 'Como se diz "chat" em portugues?', options: ['gato', 'cao', 'passaro'], correct: 0 },
+                    { question: 'Que palavra e uma cor?', options: ['azul', 'cadeira', 'janela'], correct: 0 },
+                    { question: 'Que significa "maca"?', options: ['apple', 'house', 'water'], correct: 0 }
+                ],
+                A2: [
+                    { question: 'Que significa "livro"?', options: ['book', 'door', 'pen'], correct: 0 },
+                    { question: 'Qual frase esta correta?', options: ['Ela estuda.', 'Ela estudar.', 'Ela estudam.'], correct: 0 },
+                    { question: 'Que significa "escola"?', options: ['school', 'street', 'window'], correct: 0 }
+                ],
+                B1: [
+                    { question: 'Qual frase esta correta?', options: ['Se eu fosse rico...', 'Se eu sou rico ontem...', 'Se eu era rico agora ontem...'], correct: 0 },
+                    { question: 'Que palavra indica continuidade?', options: ['continuar', 'cair', 'fechar'], correct: 0 },
+                    { question: 'Qual frase esta na voz passiva?', options: ['A carta foi enviada.', 'Ela envia a carta.', 'Ela enviando cartas.'], correct: 0 }
+                ],
+                B2: [
+                    { question: 'Que palavra se aproxima de "dificil"?', options: ['arduo', 'pequeno', 'claro'], correct: 0 },
+                    { question: 'Que conector marca contraste?', options: ['porem', 'porque', 'entao'], correct: 0 },
+                    { question: 'Que palavra e mais precisa?', options: ['coisa', 'objeto', 'artefacto'], correct: 2 }
+                ],
+                C1: [
+                    { question: 'Qual frase e mais formal?', options: ['Diz me ja.', 'Desejo solicitar informacao.', 'Quero saber.'], correct: 1 },
+                    { question: 'Que palavra convem a um tom academico?', options: ['miudos', 'criancas', 'menores'], correct: 2 },
+                    { question: 'Que palavra esta mais proxima de "mitigar"?', options: ['reduzir', 'piorar', 'ignorar'], correct: 0 }
+                ]
+            },
+            russe: {
+                A1: [
+                    { question: 'How do you say "cat" in English?', options: ['cat', 'dog', 'bird'], correct: 0 },
+                    { question: 'Which word is a color?', options: ['blue', 'chair', 'window'], correct: 0 },
+                    { question: 'Which word means "apple"?', options: ['apple', 'house', 'water'], correct: 0 }
+                ],
+                A2: [
+                    { question: 'What does "book" mean?', options: ['livre', 'porte', 'table'], correct: 0 },
+                    { question: 'Choose the correct sentence.', options: ['He studies.', 'He study every days.', 'He studying at home.'], correct: 0 },
+                    { question: 'What does "school" mean?', options: ['ecole', 'street', 'window'], correct: 0 }
+                ],
+                B1: [
+                    { question: 'Choose the correct sentence.', options: ['If I were rich...', 'If I am rich yesterday...', 'If I was rich now yesterday...'], correct: 0 },
+                    { question: 'Which word means continue?', options: ['continue', 'close', 'throw'], correct: 0 },
+                    { question: 'Which sentence is passive?', options: ['The door was opened.', 'He opens the door.', 'He opening the door.'], correct: 0 }
+                ],
+                B2: [
+                    { question: 'Which word is closest to "difficult"?', options: ['hard', 'small', 'soft'], correct: 0 },
+                    { question: 'Which connector shows contrast?', options: ['however', 'because', 'so'], correct: 0 },
+                    { question: 'Which word is most precise?', options: ['thing', 'object', 'artifact'], correct: 2 }
+                ],
+                C1: [
+                    { question: 'Which sentence is most formal?', options: ['Tell me this.', 'I wish to request information.', 'I wanna ask.'], correct: 1 },
+                    { question: 'Which word suits academic style best?', options: ['kids', 'children', 'little ones'], correct: 1 },
+                    { question: 'Which word is closest to "mitigate"?', options: ['reduce', 'increase', 'ignore'], correct: 0 }
+                ]
+            },
+            coreen: {
+                A1: [
+                    { question: 'How do you say "cat" in English?', options: ['cat', 'dog', 'bird'], correct: 0 },
+                    { question: 'Which word is a color?', options: ['blue', 'desk', 'door'], correct: 0 },
+                    { question: 'Which word means "apple"?', options: ['apple', 'house', 'water'], correct: 0 }
+                ],
+                A2: [
+                    { question: 'What does "book" mean?', options: ['livre', 'porte', 'stylo'], correct: 0 },
+                    { question: 'Choose the correct sentence.', options: ['She studies.', 'She study every day.', 'She studying now.'], correct: 0 },
+                    { question: 'What does "school" mean?', options: ['ecole', 'route', 'fenetre'], correct: 0 }
+                ],
+                B1: [
+                    { question: 'Choose the correct sentence.', options: ['If I were rich...', 'If I am rich yesterday...', 'If I was rich yesterday now...'], correct: 0 },
+                    { question: 'Which word means continue?', options: ['continue', 'stop', 'drop'], correct: 0 },
+                    { question: 'Which sentence is passive?', options: ['The song was sung.', 'She sings the song.', 'She singing a song.'], correct: 0 }
+                ],
+                B2: [
+                    { question: 'Which word is closest to "difficult"?', options: ['hard', 'small', 'happy'], correct: 0 },
+                    { question: 'Which connector shows contrast?', options: ['however', 'because', 'therefore'], correct: 0 },
+                    { question: 'Which word is most precise?', options: ['thing', 'object', 'artifact'], correct: 2 }
+                ],
+                C1: [
+                    { question: 'Which sentence is most formal?', options: ['Tell me now.', 'I would like to request information.', 'I wanna know.'], correct: 1 },
+                    { question: 'Which word fits academic tone best?', options: ['kids', 'children', 'youngsters'], correct: 1 },
+                    { question: 'Which word is closest to "mitigate"?', options: ['reduce', 'ignore', 'worsen'], correct: 0 }
+                ]
+            }
+        };
+
+        const fallbackRiddle = riddles.anglais.A1;
+        const fallbackQuiz = quizzes.anglais.A1;
+
+        document.getElementById('selected-language').textContent = 'Langue : ' + selectedLanguage;
+        document.getElementById('selected-level').textContent = 'Niveau : ' + selectedLevel;
+
+        function updateStatus() {
+            document.getElementById('score-display').textContent = 'Score : ' + score;
+            document.getElementById('lives-display').textContent = 'Chances : ' + lives + '/3';
+        }
+
+        function resetGame(mode) {
+            currentMode = mode;
+            score = 0;
+            lives = 3;
+            currentIndex = 0;
+            answered = false;
+            updateStatus();
+        }
+
+        function getRiddle() {
+            const generatedRiddles = buildGeneratedRiddles(selectedLanguage, selectedLevel);
+            if (generatedRiddles) {
+                return generatedRiddles;
+            }
+
+            const languageData = riddles[selectedLanguage] || riddles.anglais;
+            return languageData[selectedLevel] || fallbackRiddle;
+        }
+
+        function getQuiz() {
+            const generatedQuiz = buildGeneratedQuiz(selectedLanguage, selectedLevel);
+            if (generatedQuiz) {
+                return generatedQuiz;
+            }
+
+            const languageData = quizzes[selectedLanguage] || quizzes.anglais;
+            return languageData[selectedLevel] || fallbackQuiz;
+        }
+
+        function buildGeneratedRiddles(language, level) {
+            const generatedData = {
+                japonais: {
+                    A1: [
+                        { question: 'En japonais, je suis jaune et j aime les singes. Qui suis-je ?', answer: 'banana' },
+                        { question: 'En japonais, j ai des touches mais je n ouvre pas les portes. Qui suis-je ?', answer: 'keyboard' },
+                        { question: 'En japonais, je donne l heure mais je ne suis pas vivant. Qui suis-je ?', answer: 'clock' }
+                    ],
+                    A2: [
+                        { question: 'En japonais, j ai quatre roues et j emmene les eleves a l ecole. Qui suis-je ?', answer: 'bus' },
+                        { question: 'En japonais, j ai des pages mais je ne suis pas un arbre. Qui suis-je ?', answer: 'book' },
+                        { question: 'En japonais, on me porte aux pieds. Qui suis-je ?', answer: 'shoe' }
+                    ],
+                    B1: [
+                        { question: 'En japonais, plus on me retire, plus je grandis. Qui suis-je ?', answer: 'hole' },
+                        { question: 'En japonais, plus je seche, plus je deviens mouille. Qui suis-je ?', answer: 'towel' },
+                        { question: 'En japonais, j ai des mains mais je n applaudis pas. Qui suis-je ?', answer: 'clock' }
+                    ],
+                    B2: [
+                        { question: 'En japonais, je parle sans bouche. Qui suis-je ?', answer: 'echo' },
+                        { question: 'En japonais, je voyage dans le monde tout en restant dans un coin. Qui suis-je ?', answer: 'stamp' },
+                        { question: 'En japonais, plus il y a de moi, moins tu vois. Qui suis-je ?', answer: 'darkness' }
+                    ],
+                    C1: [
+                        { question: 'En japonais, j existe dans la memoire et le manque. Qui suis-je ?', answer: 'past' },
+                        { question: 'En japonais, je nais dans le silence et je meurs dans le bruit. Qui suis-je ?', answer: 'thought' },
+                        { question: 'En japonais, je donne forme au langage sans etre prononce. Qui suis-je ?', answer: 'meaning' }
+                    ]
+                },
+                chinois: {
+                    A1: [
+                        { question: 'En chinois, je suis jaune et les singes m aiment. Qui suis-je ?', answer: 'banana' },
+                        { question: 'En chinois, j ai des touches mais je n ouvre pas les portes. Qui suis-je ?', answer: 'keyboard' },
+                        { question: 'En chinois, je donne l heure mais je ne suis pas vivant. Qui suis-je ?', answer: 'clock' }
+                    ],
+                    A2: [
+                        { question: 'En chinois, j ai quatre roues et je vais a l ecole. Qui suis-je ?', answer: 'bus' },
+                        { question: 'En chinois, j ai des pages mais je ne suis pas un arbre. Qui suis-je ?', answer: 'book' },
+                        { question: 'En chinois, on me porte aux pieds. Qui suis-je ?', answer: 'shoe' }
+                    ],
+                    B1: [
+                        { question: 'En chinois, plus on me retire, plus je grandis. Qui suis-je ?', answer: 'hole' },
+                        { question: 'En chinois, plus je seche, plus je deviens mouille. Qui suis-je ?', answer: 'towel' },
+                        { question: 'En chinois, j ai des mains mais je n applaudis pas. Qui suis-je ?', answer: 'clock' }
+                    ],
+                    B2: [
+                        { question: 'En chinois, je parle sans bouche. Qui suis-je ?', answer: 'echo' },
+                        { question: 'En chinois, je voyage dans le monde sans quitter mon coin. Qui suis-je ?', answer: 'stamp' },
+                        { question: 'En chinois, plus il y a de moi, moins tu vois. Qui suis-je ?', answer: 'darkness' }
+                    ],
+                    C1: [
+                        { question: 'En chinois, je vis dans la memoire et la nostalgie. Qui suis-je ?', answer: 'past' },
+                        { question: 'En chinois, je nais dans le silence et je meurs dans le bruit. Qui suis-je ?', answer: 'thought' },
+                        { question: 'En chinois, je forme le langage sans etre dit. Qui suis-je ?', answer: 'meaning' }
+                    ]
+                },
+                arabe: {
+                    A1: [
+                        { question: 'En arabe, je suis jaune et les singes m aiment. Qui suis-je ?', answer: 'banana' },
+                        { question: 'En arabe, j ai des touches mais je n ouvre pas les portes. Qui suis-je ?', answer: 'keyboard' },
+                        { question: 'En arabe, je donne l heure sans etre vivant. Qui suis-je ?', answer: 'clock' }
+                    ],
+                    A2: [
+                        { question: 'En arabe, j ai quatre roues et je transporte les enfants a l ecole. Qui suis-je ?', answer: 'bus' },
+                        { question: 'En arabe, j ai des pages mais je ne suis pas un arbre. Qui suis-je ?', answer: 'book' },
+                        { question: 'En arabe, on me met aux pieds. Qui suis-je ?', answer: 'shoe' }
+                    ],
+                    B1: [
+                        { question: 'En arabe, plus on me retire, plus je grandis. Qui suis-je ?', answer: 'hole' },
+                        { question: 'En arabe, plus je seche, plus je suis mouille. Qui suis-je ?', answer: 'towel' },
+                        { question: 'En arabe, j ai des mains mais je n applaudis pas. Qui suis-je ?', answer: 'clock' }
+                    ],
+                    B2: [
+                        { question: 'En arabe, je parle sans bouche. Qui suis-je ?', answer: 'echo' },
+                        { question: 'En arabe, je voyage dans le monde en restant dans un coin. Qui suis-je ?', answer: 'stamp' },
+                        { question: 'En arabe, plus il y a de moi, moins tu vois. Qui suis-je ?', answer: 'darkness' }
+                    ],
+                    C1: [
+                        { question: 'En arabe, je vis dans la memoire et le manque. Qui suis-je ?', answer: 'past' },
+                        { question: 'En arabe, je nais dans le silence et je meurs dans le bruit. Qui suis-je ?', answer: 'thought' },
+                        { question: 'En arabe, je modele le langage sans etre prononce. Qui suis-je ?', answer: 'meaning' }
+                    ]
+                },
+                russe: {
+                    A1: [
+                        { question: 'En russe, je suis jaune et les singes m aiment. Qui suis-je ?', answer: 'banana' },
+                        { question: 'En russe, j ai des touches mais je n ouvre pas les portes. Qui suis-je ?', answer: 'keyboard' },
+                        { question: 'En russe, je donne l heure sans etre vivant. Qui suis-je ?', answer: 'clock' }
+                    ],
+                    A2: [
+                        { question: 'En russe, j ai quatre roues et je vais a l ecole. Qui suis-je ?', answer: 'bus' },
+                        { question: 'En russe, j ai des pages mais je ne suis pas un arbre. Qui suis-je ?', answer: 'book' },
+                        { question: 'En russe, on me porte aux pieds. Qui suis-je ?', answer: 'shoe' }
+                    ],
+                    B1: [
+                        { question: 'En russe, plus on me retire, plus je grandis. Qui suis-je ?', answer: 'hole' },
+                        { question: 'En russe, plus je seche, plus je deviens mouille. Qui suis-je ?', answer: 'towel' },
+                        { question: 'En russe, j ai des mains mais je n applaudis pas. Qui suis-je ?', answer: 'clock' }
+                    ],
+                    B2: [
+                        { question: 'En russe, je parle sans bouche. Qui suis-je ?', answer: 'echo' },
+                        { question: 'En russe, je voyage dans le monde tout en restant dans un coin. Qui suis-je ?', answer: 'stamp' },
+                        { question: 'En russe, plus il y a de moi, moins tu vois. Qui suis-je ?', answer: 'darkness' }
+                    ],
+                    C1: [
+                        { question: 'En russe, je vis dans la memoire et la nostalgie. Qui suis-je ?', answer: 'past' },
+                        { question: 'En russe, je nais dans le silence et je meurs dans le bruit. Qui suis-je ?', answer: 'thought' },
+                        { question: 'En russe, je donne forme au langage sans etre prononce. Qui suis-je ?', answer: 'meaning' }
+                    ]
+                },
+                coreen: {
+                    A1: [
+                        { question: 'En coreen, je suis jaune et les singes m aiment. Qui suis-je ?', answer: 'banana' },
+                        { question: 'En coreen, j ai des touches mais je n ouvre pas les portes. Qui suis-je ?', answer: 'keyboard' },
+                        { question: 'En coreen, je donne l heure sans etre vivant. Qui suis-je ?', answer: 'clock' }
+                    ],
+                    A2: [
+                        { question: 'En coreen, j ai quatre roues et je transporte les eleves a l ecole. Qui suis-je ?', answer: 'bus' },
+                        { question: 'En coreen, j ai des pages mais je ne suis pas un arbre. Qui suis-je ?', answer: 'book' },
+                        { question: 'En coreen, on me porte aux pieds. Qui suis-je ?', answer: 'shoe' }
+                    ],
+                    B1: [
+                        { question: 'En coreen, plus on me retire, plus je grandis. Qui suis-je ?', answer: 'hole' },
+                        { question: 'En coreen, plus je seche, plus je deviens mouille. Qui suis-je ?', answer: 'towel' },
+                        { question: 'En coreen, j ai des mains mais je n applaudis pas. Qui suis-je ?', answer: 'clock' }
+                    ],
+                    B2: [
+                        { question: 'En coreen, je parle sans bouche. Qui suis-je ?', answer: 'echo' },
+                        { question: 'En coreen, je voyage dans le monde sans quitter mon coin. Qui suis-je ?', answer: 'stamp' },
+                        { question: 'En coreen, plus il y a de moi, moins tu vois. Qui suis-je ?', answer: 'darkness' }
+                    ],
+                    C1: [
+                        { question: 'En coreen, je reste dans la memoire et le manque. Qui suis-je ?', answer: 'past' },
+                        { question: 'En coreen, je nais dans le silence et je meurs dans le bruit. Qui suis-je ?', answer: 'thought' },
+                        { question: 'En coreen, je forme le langage sans etre prononce. Qui suis-je ?', answer: 'meaning' }
+                    ]
+                }
+            };
+
+            const languageData = generatedData[language];
+            return languageData ? languageData[level] : null;
+        }
+
+        function buildGeneratedQuiz(language, level) {
+            const generatedData = {
+                japonais: {
+                    A1: [
+                        { question: 'En japonais, quel mot veut dire "bonjour" ?', options: ['konnichiwa', 'sayonara', 'arigato'], correct: 0 },
+                        { question: 'En japonais, quel mot veut dire "merci" ?', options: ['ohayo', 'arigato', 'neko'], correct: 1 },
+                        { question: 'En japonais, quel mot veut dire "chat" ?', options: ['inu', 'hon', 'neko'], correct: 2 }
+                    ],
+                    A2: [
+                        { question: 'En japonais, quel mot veut dire "ecole" ?', options: ['gakko', 'kuruma', 'mizu'], correct: 0 },
+                        { question: 'En japonais, quel mot veut dire "livre" ?', options: ['hon', 'sora', 'ki'], correct: 0 },
+                        { question: 'En japonais, quel mot veut dire "eau" ?', options: ['mizu', 'ashi', 'hana'], correct: 0 }
+                    ],
+                    B1: [
+                        { question: 'En japonais, quel mot est le plus adapte pour dire "continuer" ?', options: ['tsuzukeru', 'taberu', 'neru'], correct: 0 },
+                        { question: 'En japonais, quel mot veut dire "important" ?', options: ['taisetsu', 'akai', 'hayai'], correct: 0 },
+                        { question: 'En japonais, quel mot veut dire "penser" ?', options: ['kangaeru', 'miru', 'iku'], correct: 0 }
+                    ],
+                    B2: [
+                        { question: 'En japonais, quel mot exprime le contraste ?', options: ['shikashi', 'soshite', 'dakara'], correct: 0 },
+                        { question: 'En japonais, quel mot veut dire "difficile" ?', options: ['muzukashii', 'yasashii', 'ookii'], correct: 0 },
+                        { question: 'En japonais, quel mot veut dire "explication" ?', options: ['setsumei', 'kuruma', 'kutsu'], correct: 0 }
+                    ],
+                    C1: [
+                        { question: 'En japonais, quel mot convient a un registre soutenu pour dire "demande" ?', options: ['onegai', 'irai', 'udon'], correct: 1 },
+                        { question: 'En japonais, quel mot veut dire "signification" ?', options: ['imi', 'mori', 'hashi'], correct: 0 },
+                        { question: 'En japonais, quel mot veut dire "memoire" ?', options: ['kioku', 'denwa', 'sakana'], correct: 0 }
+                    ]
+                },
+                chinois: {
+                    A1: [
+                        { question: 'En chinois, quel mot veut dire "bonjour" ?', options: ['ni hao', 'xie xie', 'zai jian'], correct: 0 },
+                        { question: 'En chinois, quel mot veut dire "merci" ?', options: ['xie xie', 'ni hao', 'mao'], correct: 0 },
+                        { question: 'En chinois, quel mot veut dire "chat" ?', options: ['gou', 'mao', 'shu'], correct: 1 }
+                    ],
+                    A2: [
+                        { question: 'En chinois, quel mot veut dire "ecole" ?', options: ['xuexiao', 'shui', 'che'], correct: 0 },
+                        { question: 'En chinois, quel mot veut dire "livre" ?', options: ['shu', 'men', 'hua'], correct: 0 },
+                        { question: 'En chinois, quel mot veut dire "eau" ?', options: ['shui', 'ri', 'ren'], correct: 0 }
+                    ],
+                    B1: [
+                        { question: 'En chinois, quel mot veut dire "penser" ?', options: ['xiang', 'chi', 'pao'], correct: 0 },
+                        { question: 'En chinois, quel mot veut dire "important" ?', options: ['zhongyao', 'lanse', 'xiaode'], correct: 0 },
+                        { question: 'En chinois, quel mot veut dire "continuer" ?', options: ['jixu', 'tingzhi', 'huiqu'], correct: 0 }
+                    ],
+                    B2: [
+                        { question: 'En chinois, quel mot exprime le contraste ?', options: ['danshi', 'suoyi', 'he'], correct: 0 },
+                        { question: 'En chinois, quel mot veut dire "difficile" ?', options: ['kunnan', 'jiandan', 'gaoxing'], correct: 0 },
+                        { question: 'En chinois, quel mot veut dire "explication" ?', options: ['jieshi', 'zhuozi', 'xiezi'], correct: 0 }
+                    ],
+                    C1: [
+                        { question: 'En chinois, quel mot veut dire "signification" ?', options: ['yisi', 'shijian', 'mianbao'], correct: 0 },
+                        { question: 'En chinois, quel mot veut dire "memoire" ?', options: ['jiyi', 'pengyou', 'hecha'], correct: 0 },
+                        { question: 'En chinois, quel mot veut dire "demande formelle" ?', options: ['qingqiu', 'shuijiao', 'lanqiu'], correct: 0 }
+                    ]
+                },
+                arabe: {
+                    A1: [
+                        { question: 'En arabe, quel mot veut dire "bonjour" ?', options: ['marhaban', 'shukran', 'maa salama'], correct: 0 },
+                        { question: 'En arabe, quel mot veut dire "merci" ?', options: ['shukran', 'kitab', 'qitt'], correct: 0 },
+                        { question: 'En arabe, quel mot veut dire "chat" ?', options: ['qitt', 'kalb', 'bab'], correct: 0 }
+                    ],
+                    A2: [
+                        { question: 'En arabe, quel mot veut dire "ecole" ?', options: ['madrasa', 'maa', 'sayyara'], correct: 0 },
+                        { question: 'En arabe, quel mot veut dire "livre" ?', options: ['kitab', 'shams', 'bab'], correct: 0 },
+                        { question: 'En arabe, quel mot veut dire "eau" ?', options: ['maa', 'qalam', 'samaa'], correct: 0 }
+                    ],
+                    B1: [
+                        { question: 'En arabe, quel mot veut dire "penser" ?', options: ['yufakkir', 'yaktub', 'yamshi'], correct: 0 },
+                        { question: 'En arabe, quel mot veut dire "important" ?', options: ['muhimm', 'azraq', 'saghir'], correct: 0 },
+                        { question: 'En arabe, quel mot veut dire "continuer" ?', options: ['yastamirru', 'yatawaqqaf', 'yarja'], correct: 0 }
+                    ],
+                    B2: [
+                        { question: 'En arabe, quel mot exprime le contraste ?', options: ['lakin', 'lianna', 'thumma'], correct: 0 },
+                        { question: 'En arabe, quel mot veut dire "difficile" ?', options: ['saab', 'sahl', 'jamil'], correct: 0 },
+                        { question: 'En arabe, quel mot veut dire "explication" ?', options: ['sharh', 'kursi', 'nafidha'], correct: 0 }
+                    ],
+                    C1: [
+                        { question: 'En arabe, quel mot veut dire "signification" ?', options: ['mana', 'khubz', 'bab'], correct: 0 },
+                        { question: 'En arabe, quel mot veut dire "memoire" ?', options: ['dhakira', 'sadiq', 'shajara'], correct: 0 },
+                        { question: 'En arabe, quel mot veut dire "demande formelle" ?', options: ['talab', 'safar', 'samak'], correct: 0 }
+                    ]
+                },
+                russe: {
+                    A1: [
+                        { question: 'En russe, quel mot veut dire "bonjour" ?', options: ['privet', 'spasibo', 'poka'], correct: 0 },
+                        { question: 'En russe, quel mot veut dire "merci" ?', options: ['spasibo', 'kot', 'dom'], correct: 0 },
+                        { question: 'En russe, quel mot veut dire "chat" ?', options: ['sobaka', 'kot', 'okno'], correct: 1 }
+                    ],
+                    A2: [
+                        { question: 'En russe, quel mot veut dire "ecole" ?', options: ['shkola', 'voda', 'mashina'], correct: 0 },
+                        { question: 'En russe, quel mot veut dire "livre" ?', options: ['kniga', 'ruka', 'dver'], correct: 0 },
+                        { question: 'En russe, quel mot veut dire "eau" ?', options: ['voda', 'zvezda', 'dom'], correct: 0 }
+                    ],
+                    B1: [
+                        { question: 'En russe, quel mot veut dire "penser" ?', options: ['dumat', 'bezhat', 'pisat'], correct: 0 },
+                        { question: 'En russe, quel mot veut dire "important" ?', options: ['vazhnyy', 'siniy', 'malenkiy'], correct: 0 },
+                        { question: 'En russe, quel mot veut dire "continuer" ?', options: ['prodolzhat', 'ostanovit', 'vernutsya'], correct: 0 }
+                    ],
+                    B2: [
+                        { question: 'En russe, quel mot exprime le contraste ?', options: ['odnako', 'potomu chto', 'zatem'], correct: 0 },
+                        { question: 'En russe, quel mot veut dire "difficile" ?', options: ['trudnyy', 'lyogkiy', 'radostnyy'], correct: 0 },
+                        { question: 'En russe, quel mot veut dire "explication" ?', options: ['obyasnenie', 'stol', 'obuv'], correct: 0 }
+                    ],
+                    C1: [
+                        { question: 'En russe, quel mot veut dire "signification" ?', options: ['znachenie', 'khleb', 'more'], correct: 0 },
+                        { question: 'En russe, quel mot veut dire "memoire" ?', options: ['pamyat', 'telefon', 'ulitsa'], correct: 0 },
+                        { question: 'En russe, quel mot veut dire "demande formelle" ?', options: ['zapros', 'ryba', 'stul'], correct: 0 }
+                    ]
+                },
+                coreen: {
+                    A1: [
+                        { question: 'En coreen, quel mot veut dire "bonjour" ?', options: ['annyeong', 'gamsahamnida', 'jalga'], correct: 0 },
+                        { question: 'En coreen, quel mot veut dire "merci" ?', options: ['gamsahamnida', 'chaek', 'goyangi'], correct: 0 },
+                        { question: 'En coreen, quel mot veut dire "chat" ?', options: ['gae', 'goyangi', 'mul'], correct: 1 }
+                    ],
+                    A2: [
+                        { question: 'En coreen, quel mot veut dire "ecole" ?', options: ['hakgyo', 'mul', 'cha'], correct: 0 },
+                        { question: 'En coreen, quel mot veut dire "livre" ?', options: ['chaek', 'mun', 'namu'], correct: 0 },
+                        { question: 'En coreen, quel mot veut dire "eau" ?', options: ['mul', 'bal', 'hae'], correct: 0 }
+                    ],
+                    B1: [
+                        { question: 'En coreen, quel mot veut dire "penser" ?', options: ['saenggakada', 'gada', 'meokda'], correct: 0 },
+                        { question: 'En coreen, quel mot veut dire "important" ?', options: ['jungyohan', 'paran', 'jageun'], correct: 0 },
+                        { question: 'En coreen, quel mot veut dire "continuer" ?', options: ['gyesokhada', 'meomchuda', 'doragada'], correct: 0 }
+                    ],
+                    B2: [
+                        { question: 'En coreen, quel mot exprime le contraste ?', options: ['geureona', 'geuraeseo', 'wa'], correct: 0 },
+                        { question: 'En coreen, quel mot veut dire "difficile" ?', options: ['eoryeoun', 'swipda', 'haengbokhan'], correct: 0 },
+                        { question: 'En coreen, quel mot veut dire "explication" ?', options: ['seolmyeong', 'uija', 'sinbal'], correct: 0 }
+                    ],
+                    C1: [
+                        { question: 'En coreen, quel mot veut dire "signification" ?', options: ['uimi', 'ppang', 'gil'], correct: 0 },
+                        { question: 'En coreen, quel mot veut dire "memoire" ?', options: ['gieok', 'chingu', 'badak'], correct: 0 },
+                        { question: 'En coreen, quel mot veut dire "demande formelle" ?', options: ['yocheong', 'mulgogi', 'chaeksang'], correct: 0 }
+                    ]
+                }
+            };
+
+            const languageData = generatedData[language];
+            return languageData ? languageData[level] : null;
+        }
+
+        function renderNextButton() {
+            if (currentIndex >= currentQuestions.length - 1) {
+                return '';
+            }
+
+            return '<button class="next-question-button" id="next-question-button" type="button" onclick="goToNextQuestion()">Question suivante</button>';
+        }
+
+        function renderRiddleQuestion() {
+            const riddle = currentQuestions[currentIndex];
+
+            document.getElementById('game-zone').innerHTML = `
+                <h2>Devinette pour ${playerName}</h2>
+                <p>Question ${currentIndex + 1} sur ${currentQuestions.length}</p>
+                <p>${riddle.question}</p>
+                <input class="answer-input" id="riddle-answer" type="text" placeholder="Ta reponse">
+                <button class="validate-button" type="button" onclick="checkRiddle()">Valider</button>
+                <p class="result" id="result"></p>
+                ${renderNextButton()}
+            `;
+        }
+
+        function renderQuizQuestion() {
+            const quiz = currentQuestions[currentIndex];
+            const optionsHtml = quiz.options
+                .map((option, index) => `<button class="option-button" type="button" onclick="checkQuiz(${index})">${option}</button>`)
+                .join('');
+
+            document.getElementById('game-zone').innerHTML = `
+                <h2>Question a choix multiple</h2>
+                <p>Question ${currentIndex + 1} sur ${currentQuestions.length}</p>
+                <p>${quiz.question}</p>
+                <div class="options">${optionsHtml}</div>
+                <p class="result" id="result"></p>
+                ${renderNextButton()}
+            `;
+        }
+
+        function showNextButton() {
+            const button = document.getElementById('next-question-button');
+            if (button) {
+                button.style.display = 'block';
+            }
+        }
+
+        function finishGame(message) {
+            document.getElementById('game-zone').innerHTML = `
+                <h2>Partie terminee</h2>
+                <p>${message}</p>
+                <p>Score final : ${score}</p>
+                <p>Chances restantes : ${lives}</p>
+                <button class="validate-button" type="button" onclick="${currentMode === 'riddle' ? 'showRiddle()' : 'showQuiz()'}">Rejouer</button>
+            `;
+        }
+
+        function goToNextQuestion() {
+            currentIndex += 1;
+            answered = false;
+
+            if (currentIndex >= currentQuestions.length) {
+                finishGame('Tu as termine toutes les questions, ' + playerName + ' !');
+                return;
+            }
+
+            if (currentMode === 'riddle') {
+                renderRiddleQuestion();
+                return;
+            }
+
+            renderQuizQuestion();
+        }
+
+        function showRiddle() {
+            resetGame('riddle');
+            currentQuestions = getRiddle();
+            renderRiddleQuestion();
+        }
+
+        function checkRiddle() {
+            if (lives <= 0 || answered) {
+                return;
+            }
+
+            const riddle = currentQuestions[currentIndex];
+            const answer = document.getElementById('riddle-answer').value.trim().toLowerCase();
+            const result = document.getElementById('result');
+
+            if (answer === riddle.answer.toLowerCase()) {
+                answered = true;
+                score += 1;
+                updateStatus();
+                if (currentIndex === currentQuestions.length - 1) {
+                    finishGame('Tu as termine toutes les devinettes, ' + playerName + ' !');
+                    return;
+                }
+
+                result.textContent = 'Bravo ' + playerName + ' ! Bonne reponse.';
+                showNextButton();
+                return;
+            }
+
+            lives -= 1;
+            updateStatus();
+
+            if (lives > 0) {
+                result.textContent = 'Ce n est pas la bonne reponse. Il te reste ' + lives + ' chance(s).';
+                return;
+            }
+
+            answered = true;
+            finishGame('Tu as perdu tes 3 chances. La bonne reponse etait : ' + riddle.answer + '.');
+        }
+
+        function showQuiz() {
+            resetGame('quiz');
+            currentQuestions = getQuiz();
+            renderQuizQuestion();
+        }
+
+        function checkQuiz(index) {
+            if (lives <= 0 || answered) {
+                return;
+            }
+
+            const quiz = currentQuestions[currentIndex];
+            const result = document.getElementById('result');
+
+            if (index === quiz.correct) {
+                answered = true;
+                score += 1;
+                updateStatus();
+                if (currentIndex === currentQuestions.length - 1) {
+                    finishGame('Tu as termine toutes les questions du QCM, ' + playerName + ' !');
+                    return;
+                }
+
+                result.textContent = 'Bonne reponse ' + playerName + ' !';
+                showNextButton();
+                return;
+            }
+
+            lives -= 1;
+            updateStatus();
+
+            if (lives > 0) {
+                result.textContent = 'Mauvaise reponse. Il te reste ' + lives + ' chance(s).';
+                return;
+            }
+
+            answered = true;
+            finishGame('Tu as perdu tes 3 chances. La bonne reponse etait : ' + quiz.options[quiz.correct] + '.');
+        }
+
+        updateStatus();
+    </script>
+</body>
+</html>

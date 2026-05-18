@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LinguoQuest — Apprends les langues</title>
+
+<style>
+    body {
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    background:rgb(222, 149, 222);;
+    color: #e2e8f0;
+    position: relative;
+    overflow-x: hidden;
+  }
+  .page {
+    display: none; min-height: 100vh; padding: 2rem 1.5rem;
+    flex-direction: column; align-items: center; justify-content: center;
+    position: relative; z-index: 2;
+  }
+  .page.active { display: flex; animation: fadeIn .4s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+ 
+  /* ───── TYPO ───── */
+  .title {
+    font-family: 'Bubblegum Sans', cursive;
+    font-size: 2.4rem; color: #ffd700;
+    text-align: center; margin-bottom: .3rem;
+    text-shadow: 0 0 24px rgba(255,215,0,.4);
+  }
+  .subtitle { color:black ; font-size: 1rem; text-align: center; margin-bottom: 2rem; }
+ 
+  /* ───── CARD ───── */
+  .card {
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 20px; padding: 2rem;
+    width: 100%; max-width: 480px;
+    backdrop-filter: blur(10px);
+  }
+ 
+  /* ───── INPUTS ───── */
+  .label {
+    color: black ; font-size: .82rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; margin-bottom: .5rem;
+    display: block;
+  }
+  input[type=text] {
+    width: 100%;
+    background: rgba(255,255,255,.08);
+    border: 1.5px solid rgba(255,255,255,.15);
+    border-radius: 12px; padding: .9rem 1.1rem;
+    color: #fff; font-size: 1.1rem; font-family: 'Poppins', sans-serif;
+    outline: none; transition: border-color .2s; margin-bottom: 1.5rem;
+  }
+  input[type=text]:focus { border-color: #ffd700; }
+  input[type=text]::placeholder { color: black ; }
+ 
+  /* ───── BOUTON PRINCIPAL ───── */
+  .btn {
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    border: none; border-radius: 14px; padding: .9rem 2rem;
+    color: #1a1a2e; font-size: 1rem; font-weight: 800;
+    cursor: pointer; width: 100%;
+    font-family: 'Poppins', sans-serif;
+    transition: transform .15s, box-shadow .15s;
+    box-shadow: 0 4px 20px rgba(255,215,0,.3);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,215,0,.5); }
+  .btn:active { transform: translateY(0); }
+  .btn.ghost {
+    background: rgba(255,255,255,.08);
+    border: 1.5px solid rgba(255,255,255,.15);
+    color: #e2e8f0; box-shadow: none;
+  }
+  .btn.ghost:hover { box-shadow: none; background: rgba(255,255,255,.13); }
+
+</style>
+<div class="page active" id="p1">
+  <div class="title">Everywhere</div>
+  <div class="subtitle">Apprends les langues en t'amusant !</div>
+  <div class="card">
+    <label class="label" for="pseudo-input">Ton pseudo de joueur</label>
+    <input type="text" id="pseudo-input" />
+    <button class="btn" onclick="startGame()">Commencer l'aventure </button>
+  </div>
+</div>
+<script>
+  function startGame() {
+    // 1. Récupérer la valeur tapée par l'utilisateur et enlever les espaces au début/fin
+    const pseudo = document.getElementById('pseudo-input').value.trim();
+    
+    // 2. Sécurité : empêcher de continuer si le champ est vide
+    if (pseudo === "") {
+      // Optionnel : vous pourriez ajouter une animation pour faire trembler le input ou changer sa bordure en rouge
+      document.getElementById('pseudo-input').style.borderColor = "red";
+      return; // Arrête la fonction ici
+    }
+
+    // 3. Sauvegarder le pseudo dans le localStorage du navigateur
+    localStorage.setItem('playerName', pseudo);
+
+    // 4. Rediriger vers la page suivante (votre sélecteur de langue)
+    // Assurez-vous que le fichier s'appelle bien 'dev3.html'
+    window.location.href = 'dev3.html';
+  }
+</script>
+
+</body>
+</html>
