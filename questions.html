@@ -1135,8 +1135,14 @@
         function showRiddle() {
             resetGame('riddle');
             currentQuestions = getRiddle();
-            renderRiddleQuestion();
-        }
+
+           if (!currentQuestions.length) {
+                document.getElementById('game-zone').innerHTML ="<p>Aucune question disponible pour ce niveau.</p>";
+            return;
+    }
+
+             renderRiddleQuestion();
+}
 
         function checkRiddle() {
             if (lives <= 0 || answered) {
