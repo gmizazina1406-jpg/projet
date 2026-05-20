@@ -90,12 +90,12 @@
 </div>
 <script>
   function startGame() {
-    // 1. Récupérer la valeur tapée par l'utilisateur et enlever les espaces au début/fin
+    // 1. Récupérer la valeur tapée par l'utilisateur 
     const pseudo = document.getElementById('pseudo-input').value.trim();
     
     // 2. Sécurité : empêcher de continuer si le champ est vide
     if (pseudo === "") {
-      // Optionnel : vous pourriez ajouter une animation pour faire trembler le input ou changer sa bordure en rouge
+      
       document.getElementById('pseudo-input').style.borderColor = "red";
       return; // Arrête la fonction ici
     }
@@ -103,8 +103,8 @@
     // 3. Sauvegarder le pseudo dans le localStorage du navigateur
     localStorage.setItem('playerName', pseudo);
 
-    // 4. Rediriger vers la page suivante (votre sélecteur de langue)
-    // Assurez-vous que le fichier s'appelle bien 'dev3.html'
+    // 4. Rediriger vers la page suivante 
+    
     window.location.href = 'dev3.html';
   }
 </script>
